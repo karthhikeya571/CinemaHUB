@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineStream | 5D Immersive Cinema</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="theater-bg"></div>
+    <div class="overlay"></div>
+
+    <main id="loginPage" class="login-wrapper">
+        <form class="glass-form" onsubmit="event.preventDefault(); login();">
+            <div class="logo">Cinema<span>HUB</span></div>
+            <h2>Login</h2>
+            
+            <div class="input-box">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email">
+            </div>
+
+            <div class="input-box">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="btn-submit">Enter Cinema</button>
+            <p id="errorMsg"></p>
+            
+        </form>
+    </main>
+
+    <main id="moviePage" class="movie-dashboard">
+        <nav class="top-nav">
+            <div class="logo">Cinema<span>HUB</span></div>
+            <div id="google_translate_element"></div>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search movies, series, actors...">
+                <button onclick="searchMovies()">Search</button>
+            </div>
+        </nav>
+
+        <section class="results-container">
+            <ul id="movieList" class="movie-grid">
+                </ul>
+        </section>
+
+
+    </main>
+
+    <script>
+        const apiKey = "15412ce0"; 
+
+        async function login() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorMsg = document.getElementById("errorMsg");
+
+            try {
+                let users = [];
+                try {
+                    const res = await fetch("users.json");
+                    users = await res.json();
+                } catch (fetchErr) {
+                    console.warn("Local file fetch blocked by browser. Using fallback data. To use users.json dynamcially, run a local web server (like VS Code Live Server).");
+                    users = [
+                        { "name": "Kartheek", "email": "karthikkarthi5677@gmail.com", "password": "1234" },
+                        { "name": "Harsha", "email": "harsha@example.com", "password": "5678" },
+                        { "name": "Gamana", "email": "gamana@example.com", "password": "5678" }
+                    ];
+                }
+
+                const user = users.find(u => u.email === email && u.password === password);
+
+                if (user) {
+                    document.getElementById("loginPage").classList.add("fade-out");
+                    setTimeout(() => {
+                        document.getElementById("loginPage").style.display = "none";
+                        document.getElementById("moviePage").style.display = "block";
+                        document.getElementById("moviePage").classList.add("fade-in");
+                    }, 500);
+                } else {
+                    errorMsg.textContent = "Invalid credentials. Please try again.";
+                }
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = "Offline Mode: Please ensure users.json is present.";
+            }
+        }
+
+        async function searchMovies() {
+            const searchTerm = document.getElementById("searchInput").value.trim();
+            if(!searchTerm) return;
+            const apiUrl = `https://www.omdbapi.com/?apikey=${apiKey}&s=${searchTerm}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                const movieList = document.getElementById("movieList");
+                movieList.innerHTML = "";
+
+                if (data.Response === "True") {
+                    data.Search.forEach(movie => {
+                        const li = document.createElement("li");
+                        li.classList.add("movie-card");
+                        li.innerHTML = `
+                            <div class="card-inner">
+                                <img src="${movie.Poster !== "N/A" ? movie.Poster : 'https://via.placeholder.com/300x450'}" alt="${movie.Title}">
+                                <div class="card-info">
+                                    <h3>${movie.Title}</h3>
+                                    <p>${movie.Year}</p>
+                                    <button class="play-btn" onclick="openPlayer('${movie.imdbID}', '${movie.Type}')">Play Now</button>
+                                </div>
+                            </div>
+                        `;
+                        movieList.appendChild(li);
+                    });
+                } else {
+                    movieList.innerHTML = `<p class="no-results">No movies found for "${searchTerm}"</p>`;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function openPlayer(imdbID, type) {
+            const embedType = (type === 'series' || type === 'episode') ? 'tv' : 'movie';
+            
+            const url = `https://vidsrc.me/embed/${embedType}?imdb=${imdbID}`;
+            window.open(url, '_blank');
+        }
+    </script>
+    
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
